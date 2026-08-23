@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'drf_spectacular',
     'django_ratelimit',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CommonMiddleware'dan OLDIN bo'lishi shart
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +63,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS — frontend (arion-export.uz) alohida domenda, shuning uchun bu
+# sozlama bo'lmasa brauzer cross-origin so'rovlarni bloklaydi.
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS', 'https://arion-export.uz'
+).split(',')
 
 ROOT_URLCONF = 'arion_export.urls'
 
@@ -192,10 +200,24 @@ if MONTRA_MODE == 'LIVE':
     MONTRA_API_KEY = os.getenv('MONTRA_API_KEY_LIVE')
     MONTRA_SECRET_KEY = os.getenv('MONTRA_SECRET_KEY_LIVE')
     MONTRA_BASE_URL = os.getenv('MONTRA_BASE_URL_LIVE', 'https://api.montratech.com/api/v1')
+    MONTRA_WEBHOOK_SECRET = os.getenv('MONTRA_WEBHOOK_SECRET_LIVE')
 else:
     MONTRA_API_KEY = os.getenv('MONTRA_API_KEY_TEST')
     MONTRA_SECRET_KEY = os.getenv('MONTRA_SECRET_KEY_TEST')
     MONTRA_BASE_URL = os.getenv('MONTRA_BASE_URL_TEST', 'https://api.montratech.com/api/v1')
+    MONTRA_WEBHOOK_SECRET = os.getenv('MONTRA_WEBHOOK_SECRET_TEST')
+
+# MUHIM: MONTRA_WEBHOOK_SECRET — Dashboard → Settings → Webhooks'dagi
+# alohida "Webhook Secret". Bu MONTRA_SECRET_KEY (API so'rovlarini
+# imzolash uchun) BILAN BOG'LIQ EMAS — ikkalasini aralashtirmang.
+# https://docs.montratech.com/ru/webhooks/signature
+
+# Nginx orqasida deploy qilinganda, `X-Forwarded-For` headeri faqat shu
+# ro'yxatdagi IP'lardan (ya'ni Nginx'ning o'zidan) kelgan so'rovlarda
+# ishonchli hisoblanadi — aks holda mijoz uni o'zi soxtalashtirib,
+# IP-based rate-limitni chetlab o'tishi mumkin edi.
+# Production'da Nginx odatda 127.0.0.1 dan proxy_pass qiladi.
+TRUSTED_PROXY_IPS = os.getenv('TRUSTED_PROXY_IPS', '127.0.0.1').split(',')
 
 
 # Telegram Configuration

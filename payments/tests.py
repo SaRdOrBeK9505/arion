@@ -249,16 +249,22 @@ class WebhookIdempotencyTests(TestCase):
         """
         Bir xil webhook ikki marta yuborilganda ikkinchi marta hech narsa o'zgarmasligi
         """
+        import json as json_module
+
         payload = {
+            'event': 'invoice.paid',
             'data': {
                 'invoice': {
                     'externalId': str(self.payment.id),
-                    'status': 'paid',
-                    'paymentId': 'pay_123'
+                    'status': 'PAID',
+                    'payment': {'id': 'pay_123'},
                 }
             }
         }
-        signature_header = "t=1234567890,v1=abc123"
+        raw_body = json_module.dumps(payload).encode()
+        signature_header = "t=1234567890000,v1=" + "a" * 64
+        event = "invoice.paid"
+        webhook_id = "wh_test_123"
 
         with patch('payments.services.MontraClient') as mock_client:
             mock_instance = MagicMock()
@@ -268,15 +274,67 @@ class WebhookIdempotencyTests(TestCase):
             # Telegram taskni mock qilish (import ichida bo lgani uchun)
             with patch('payments.tasks.send_telegram_notification.delay', MockCeleryTask.delay):
                 # Birinchi webhook
-                handle_webhook(payload, signature_header)
+                handle_webhook(raw_body, signature_header, event, webhook_id)
                 self.payment.refresh_from_db()
                 first_paid_at = self.payment.paid_at
                 self.assertEqual(self.payment.status, Payment.Status.PAID)
 
-                # Ikkinchi webhook (xuddi shu)
-                handle_webhook(payload, signature_header)
+                # Ikkinchi webhook (xuddi shu webhook_id — dedup ishlashi kerak)
+                handle_webhook(raw_body, signature_header, event, webhook_id)
                 self.payment.refresh_from_db()
                 second_paid_at = self.payment.paid_at
 
                 # paid_at o'zgarmaganini tekshirish
                 self.assertEqual(first_paid_at, second_paid_at)
+
+    def test_webhook_different_id_not_deduped(self):
+        """Turli webhook_id bo'lsa, dedup ishlamasligi (masalan boshqa event)"""
+        from .models import WebhookEvent
+
+        self.assertEqual(WebhookEvent.objects.count(), 0)
+
+
+class PaymentSnapshotImmutabilityTests(TestCase):
+    """
+    Loyihaning eng muhim printsipi: Payment.company_name_snapshot va
+    customer_code_snapshot yaratilgandan keyin O'ZGARTIRIB BO'LMAYDI.
+    """
+
+    def setUp(self):
+        self.company_a = Company.objects.create(name="Kompaniya A")
+        self.company_b = Company.objects.create(name="Kompaniya B")
+        self.code = CustomerCode.objects.create(
+            code="111222", company=self.company_a, is_active=True
+        )
+        self.session = AccessSession.create_for(self.code, "127.0.0.1")
+
+        with patch('payments.services.MontraClient') as mock_client:
+            mock_instance = MagicMock()
+            mock_client.return_value = mock_instance
+            mock_instance.create_invoice.return_value = {
+                'invoiceId': 'inv_1', 'paymentUrl': 'https://payment.url'
+            }
+            result = create_payment(
+                session_id=self.session.id, amount=1000000, ip_address="127.0.0.1"
+            )
+            self.payment = Payment.objects.get(id=result['payment_id'])
+
+    def test_snapshot_survives_code_reassignment(self):
+        """Kod boshqa kompaniyaga qayta biriktirilsa ham, eski Payment o'zgarmaydi"""
+        self.assertEqual(self.payment.company_name_snapshot, "Kompaniya A")
+
+        # Owner kodni boshqa kompaniyaga qayta biriktiradi
+        self.code.company = self.company_b
+        self.code.save()
+
+        self.payment.refresh_from_db()
+        self.assertEqual(
+            self.payment.company_name_snapshot, "Kompaniya A",
+            "Snapshot o'zgarmasligi kerak, garchi CustomerCode.company o'zgargan bo'lsa ham",
+        )
+
+    def test_direct_snapshot_mutation_raises(self):
+        """Snapshot maydonini to'g'ridan-to'g'ri o'zgartirishga urinish xato berishi kerak"""
+        self.payment.company_name_snapshot = "Boshqa nom"
+        with self.assertRaises(ValueError):
+            self.payment.save()

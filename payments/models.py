@@ -143,7 +143,43 @@ class Payment(models.Model):
     def __str__(self):
         return f"{self.customer_code_snapshot} - {self.amount // 100:,} {self.currency}".replace(",", " ")
 
+    # Snapshot maydonlar — yaratilgandan keyin o'zgartirib bo'lmaydi (moliyaviy audit uchun)
+    _SNAPSHOT_FIELDS = ("company_name_snapshot", "customer_code_snapshot")
+
     def save(self, *args, **kwargs):
-        # Snapshot yozilishini kafolatlaydi — birinchi saqlashda,
-        # keyingi update'larda o'zgartirilmasligi kerak (create() da to'ldiriladi).
+        # BUG TUZATILDI: avvalgi versiyada bu metod hech narsani tekshirmasdi,
+        # faqat izohda "kafolatlaydi" deyilgan edi. Endi haqiqatan ham
+        # snapshot maydonlari yaratilgandan keyin o'zgartirilsa xato beradi.
+        if self.pk:
+            original = (
+                Payment.objects.filter(pk=self.pk)
+                .values(*self._SNAPSHOT_FIELDS)
+                .first()
+            )
+            if original is not None:
+                for field in self._SNAPSHOT_FIELDS:
+                    if getattr(self, field) != original[field]:
+                        raise ValueError(
+                            f"'{field}' — bu snapshot maydoni, Payment yaratilgandan "
+                            f"keyin o'zgartirib bo'lmaydi (moliyaviy audit printsipi)."
+                        )
         super().save(*args, **kwargs)
+
+
+class WebhookEvent(models.Model):
+    """
+    MONTRA'dan kelgan har bir webhookni `X-Webhook-Id` bo'yicha bir marta
+    qayta ishlash uchun. MONTRA tarmoq muammosi bo'lsa bir xil webhookni
+    qayta yuborishi mumkin (retry) — bu jadval shu holatlarda ikkilanishning
+    oldini oladi (masalan Telegram xabarnomasi ikki marta yuborilmasin).
+    """
+    webhook_id = models.CharField(max_length=128, unique=True, db_index=True)
+    event = models.CharField(max_length=64)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Webhook logi")
+        verbose_name_plural = _("Webhook loglari")
+
+    def __str__(self):
+        return f"{self.event} ({self.webhook_id})"

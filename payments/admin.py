@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Sum, Count
 from import_export import resources
 from import_export.admin import ImportExportMixin
-from .models import Company, CustomerCode, AccessSession, Payment, CodeVerificationLog
+from .models import Company, CustomerCode, AccessSession, Payment, CodeVerificationLog, WebhookEvent
 
 
 class CompanyFilter(admin.SimpleListFilter):
@@ -136,4 +136,21 @@ class AccessSessionAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(WebhookEvent)
+class WebhookEventAdmin(admin.ModelAdmin):
+    list_display = ["event", "webhook_id", "received_at"]
+    list_filter = ["event", "received_at"]
+    search_fields = ["webhook_id"]
+    readonly_fields = ["webhook_id", "event", "received_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

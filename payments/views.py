@@ -61,15 +61,22 @@ def verify_code_view(request):
     description="To'lov yaratish va MONTRA invoice olish",
 )
 @api_view(['POST'])
+@ratelimit(key='ip', rate='10/m', method='POST')
+@ratelimit(key='ip', rate='60/h', method='POST')
 def create_payment_view(request):
     """
     To'lov yaratish
-    
+
     POST /api/create-payment/
     {
         "session_id": "uuid",
         "amount": 1000000
     }
+
+    MUHIM: bu endpointda rate-limit bo'lishi SHART. Aks holda bitta
+    session_id (masalan brauzer tarixi, log fayl orqali oshkor bo'lib
+    qolsa) bilan cheksiz marta MONTRA'da invoice yaratish mumkin bo'lardi
+    (spam-invoice / MONTRA API limitiga tegish xavfi).
     """
     serializer = CreatePaymentRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -122,14 +129,21 @@ def payment_status_view(request, payment_id):
 def montra_webhook_view(request):
     """
     MONTRA webhook endpoint
-    
+
     POST /api/webhooks/montra/
+
+    MUHIM: imzo tekshiruvi XOM (raw) baytlarga bog'liq bo'lgani uchun
+    request.body dan foydalanamiz, request.data DAN EMAS — DRF request.data
+    JSON'ni allaqachon Python dict'ga aylantirib bo'ladi va original
+    baytlar yo'qoladi, natijada imzo hech qachon mos kelmaydi.
     """
-    signature_header = request.headers.get('X-Signature', '')
-    payload = request.data
+    raw_body = request.body  # request.data'dan OLDIN o'qilishi shart
+    signature_header = request.headers.get('X-Webhook-Signature', '')
+    event = request.headers.get('X-Webhook-Event', '')
+    webhook_id = request.headers.get('X-Webhook-Id', '')
 
     try:
-        handle_webhook(payload, signature_header)
+        handle_webhook(raw_body, signature_header, event, webhook_id)
         return Response({'status': 'ok'})
 
     except PaymentServiceError as e:
@@ -140,10 +154,24 @@ def montra_webhook_view(request):
 
 
 def get_client_ip(request):
-    """Mijoz IP adresini olish"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+    """
+    Mijoz IP adresini olish.
+
+    MUHIM: `X-Forwarded-For` headerini faqat SO'ROV BIZNING ISHONCHLI
+    PROKSIMIZDAN (Nginx) kelgan bo'lsagina hisobga olamiz. Aks holda mijoz
+    o'zi bu headerni qo'lda qo'yib, IP-based rate-limitni (kod brute-force
+    himoyasini) osongina chetlab o'tishi mumkin edi — avvalgi versiyada
+    aynan shu muammo bor edi.
+
+    Nginx tomonda quyidagicha sozlanishi SHART (append emas, overwrite):
+        proxy_set_header X-Forwarded-For $remote_addr;
+    """
+    remote_addr = request.META.get('REMOTE_ADDR')
+    trusted_proxies = getattr(settings, 'TRUSTED_PROXY_IPS', [])
+
+    if remote_addr in trusted_proxies:
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+
+    return remote_addr

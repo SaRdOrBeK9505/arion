@@ -1,10 +1,11 @@
+import json
 import uuid
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Count
 from django.conf import settings
 from sentry_sdk import capture_message
-from .models import Company, CustomerCode, AccessSession, Payment, CodeVerificationLog
+from .models import Company, CustomerCode, AccessSession, Payment, CodeVerificationLog, WebhookEvent
 from .gateway.montra_client import MontraClient, MontraClientError
 from .exceptions import (
     CodeNotFoundError,
@@ -156,63 +157,89 @@ def create_payment(
         raise
 
 
-def handle_webhook(payload: dict, signature_header: str) -> None:
+def handle_webhook(raw_body: bytes, signature_header: str, event: str, webhook_id: str) -> None:
     """
     MONTRA webhook'ni qayta ishlash
-    
+
     Args:
-        payload: Webhook payload
-        signature_header: X-Signature header
-        
+        raw_body: HTTP body'ning XOM baytlari (request.body — request.data EMAS,
+            chunki imzo tekshiruvi aynan tarmoqdan kelgan baytlarga bog'liq).
+        signature_header: `X-Webhook-Signature` header qiymati.
+        event: `X-Webhook-Event` header qiymati (masalan "invoice.paid").
+        webhook_id: `X-Webhook-Id` header qiymati — dedup uchun.
+
     Raises:
         WebhookSignatureError: Imzo noto'g'ri
         PaymentNotFoundError: To'lov topilmadi
     """
-    # 1. Imzo tekshirish
+    if not event or not webhook_id:
+        raise WebhookSignatureError("X-Webhook-Event yoki X-Webhook-Id header yo'q")
+
+    # 1. Imzo tekshirish (rasmiy MONTRA spetsifikatsiyasiga muvofiq)
     montra_client = MontraClient()
-    if not montra_client.verify_webhook_signature(payload, signature_header):
+    if not montra_client.verify_webhook_signature(raw_body, signature_header, event):
         raise WebhookSignatureError("Webhook imzosi noto'g'ri")
 
-    # 2. Payment'ni topish
-    external_id = payload.get('data', {}).get('invoice', {}).get('externalId')
+    # 2. Dedup — MONTRA bir xil webhookni qayta yuborishi (retry) mumkin.
+    # get_or_create atomik: bir xil webhook_id ikkinchi marta kelsa,
+    # created=False bo'ladi va qayta ishlanmaydi.
+    _, created = WebhookEvent.objects.get_or_create(webhook_id=webhook_id, defaults={"event": event})
+    if not created:
+        return
+
+    try:
+        payload = json.loads(raw_body)
+    except (json.JSONDecodeError, TypeError):
+        raise PaymentNotFoundError("Webhook body JSON emas")
+
+    if payload.get("event") != event:
+        raise WebhookSignatureError("event header va body mos kelmadi")
+
+    data = payload.get("data", {})
+    invoice_data = data.get("invoice", {})
+    external_id = invoice_data.get("externalId")
     if not external_id:
-        raise PaymentNotFoundError("externalId topilmadi")
+        # invoice bilan bog'liq bo'lmagan eventlar (masalan settlement.*, fiscal.*)
+        # bizning oqimimizda kerak emas — jim o'tkazib yuboramiz.
+        return
 
     try:
         payment = Payment.objects.get(id=external_id)
-    except Payment.DoesNotExist:
+    except (Payment.DoesNotExist, ValueError):
         raise PaymentNotFoundError(f"To'lov topilmadi: {external_id}")
 
-    # 3. Idempotency tekshirish - allaqachon PAID bo'lsa, hech narsa qilmaymiz
+    # 3. Idempotency — allaqachon PAID bo'lsa, hech narsa qilmaymiz
     if payment.status == Payment.Status.PAID:
         return
 
-    # 4. Statusni yangilash
-    invoice_data = payload.get('data', {}).get('invoice', {})
-    invoice_status = invoice_data.get('status', '').lower()
-
-    if invoice_status == 'paid':
+    # 4. Event nomi bo'yicha yo'naltirish (MONTRA rasmiy event ro'yxati —
+    # https://docs.montratech.com/ru/webhooks#события)
+    if event == "invoice.paid":
         payment.status = Payment.Status.PAID
         payment.paid_at = timezone.now()
-        payment.gateway_payment_id = invoice_data.get('paymentId')
+        payment.gateway_payment_id = invoice_data.get("payment", {}).get("id")
         payment.gateway_raw_response = payload
-        payment.save(update_fields=['status', 'paid_at', 'gateway_payment_id', 'gateway_raw_response'])
+        payment.save(update_fields=["status", "paid_at", "gateway_payment_id", "gateway_raw_response"])
 
-        # Telegram xabarnomasi (ixtiyoriy)
         from .tasks import send_telegram_notification
         send_telegram_notification.delay(payment.id)
 
-    elif invoice_status == 'failed':
+    elif event == "invoice.failed":
         payment.status = Payment.Status.FAILED
         payment.gateway_raw_response = payload
-        payment.save(update_fields=['status', 'gateway_raw_response'])
+        payment.save(update_fields=["status", "gateway_raw_response"])
 
-    elif invoice_status == 'expired':
+    elif event == "invoice.expired":
         payment.status = Payment.Status.EXPIRED
         payment.gateway_raw_response = payload
-        payment.save(update_fields=['status', 'gateway_raw_response'])
+        payment.save(update_fields=["status", "gateway_raw_response"])
 
-    elif invoice_status == 'cancelled':
+    elif event == "invoice.cancelled":
         payment.status = Payment.Status.CANCELLED
         payment.gateway_raw_response = payload
-        payment.save(update_fields=['status', 'gateway_raw_response'])
+        payment.save(update_fields=["status", "gateway_raw_response"])
+
+    # `invoice.created`, `invoice.processing`, `payment.authorized`,
+    # `payment.captured` (DMS) va boshqa eventlar hozircha bizning oddiy
+    # bir bosqichli oqimimizda kerak emas — faqat WebhookEvent'ga
+    # yozilgani yetarli (dedup jadvalidan tashqarida qo'shimcha ish yo'q).

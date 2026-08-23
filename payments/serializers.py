@@ -22,8 +22,8 @@ class VerifyCodeResponseSerializer(serializers.Serializer):
 class CreatePaymentRequestSerializer(serializers.Serializer):
     session_id = serializers.UUIDField(help_text="Sessiya ID")
     amount = serializers.IntegerField(
-        min_value=1000000,  # 10,000 so'm
-        max_value=50000000000,  # 500,000,000 so'm
+        min_value=Payment.MIN_AMOUNT,  # Payment modelidan — qo'lda takrorlanmaydi
+        max_value=Payment.MAX_AMOUNT,
         help_text="Summa (tiyinda)"
     )
 
