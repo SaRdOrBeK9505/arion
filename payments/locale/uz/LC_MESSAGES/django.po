@@ -1,0 +1,136 @@
+# Django Admin Uzbek Translations
+msgid ""
+msgstr ""
+"Project-Id-Version: Django\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Uzbek\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Admin Site
+msgid "Site administration"
+msgstr "Sayt boshqaruvi"
+
+msgid "Administration"
+msgstr "Boshqaruv"
+
+msgid "Welcome, %(username)s"
+msgstr "Xush kelibsiz, %(username)s"
+
+# Auth
+msgid "Username"
+msgstr "Foydalanuvchi nomi"
+
+msgid "Password"
+msgstr "Parol"
+
+msgid "Log in"
+msgstr "Kirish"
+
+msgid "Log out"
+msgstr "Chiqish"
+
+# Actions
+msgid "Action"
+msgstr "Amal"
+
+msgid "Actions"
+msgstr "Amallar"
+
+msgid "Go"
+msgstr "O'tish"
+
+msgid "Save"
+msgstr "Saqlash"
+
+msgid "Save and add another"
+msgstr "Saqlash va yana qo'shish"
+
+msgid "Save and continue editing"
+msgstr "Saqlash va tahrir qilishni davom ettirish"
+
+msgid "Delete"
+msgstr "O'chirish"
+
+msgid "Cancel"
+msgstr "Bekor qilish"
+
+# Search
+msgid "Search"
+msgstr "Qidirish"
+
+msgid "Filter"
+msgstr "Filtr"
+
+# Date/Time
+msgid "Date"
+msgstr "Sana"
+
+msgid "Time"
+msgstr "Vaqt"
+
+msgid "Today"
+msgstr "Bugun"
+
+# General
+msgid "Yes"
+msgstr "Ha"
+
+msgid "No"
+msgstr "Yo'q"
+
+msgid "All"
+msgstr "Barchasi"
+
+msgid "None"
+msgstr "Hech biri"
+
+msgid "View on site"
+msgstr "Saytda ko'rish"
+
+# ModelAdmin
+msgid "Add"
+msgstr "Qo'shish"
+
+msgid "Change"
+msgstr "O'zgartirish"
+
+msgid "Change history"
+msgstr "O'zgarishlar tarixi"
+
+msgid "History"
+msgstr "Tarix"
+
+# Pagination
+msgid "Show all"
+msgstr "Barchasini ko'rsatish"
+
+# Messages
+msgid "The %(name)s \"%(obj)s\" was added successfully."
+msgstr "%(name)s \"%(obj)s\" muvaffaqiyatli qo'shildi."
+
+msgid "The %(name)s \"%(obj)s\" was changed successfully."
+msgstr "%(name)s \"%(obj)s\" muvaffaqiyatli o'zgartirildi."
+
+msgid "The %(name)s \"%(obj)s\" was deleted successfully."
+msgstr "%(name)s \"%(obj)s\" muvaffaqiyatli o'chirildi."
+
+# Errors
+msgid "Please correct the errors below."
+msgstr "Quyidagi xatolarni tuzating."
+
+# Dashboard
+msgid "Dashboard"
+msgstr "Boshqaruv paneli"
+
+# Recent Actions
+msgid "Recent actions"
+msgstr "So'nggi amallar"
+
+msgid "My actions"
+msgstr "Mening amallarim"

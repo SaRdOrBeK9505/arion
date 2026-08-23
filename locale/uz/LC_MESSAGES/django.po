@@ -1,0 +1,80 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-23 15:55+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+#: .\payments\models.py:13
+msgid "Owner uchun ichki izoh"
+msgstr "Owner uchun ichki izoh"
+
+#: .\payments\models.py:36
+msgid "Owner uchun eslatma, masalan mijoz ismi/tashkiloti"
+msgstr "Owner uchun eslatma, masalan mijoz ismi/tashkiloti"
+
+#: .\payments\models.py:46
+msgid "Kompaniyasiz"
+msgstr "Kompaniyasiz"
+
+#: .\payments\models.py:88
+msgid "Kod tekshirish logi"
+msgstr "Kod tekshirish logi"
+
+#: .\payments\models.py:89
+msgid "Kod tekshirish loglari"
+msgstr "Kod tekshirish loglari"
+
+#: .\payments\models.py:94
+msgid "Kutilmoqda"
+msgstr "Kutilmoqda"
+
+#: .\payments\models.py:95
+msgid "To'landi"
+msgstr "To'landi"
+
+#: .\payments\models.py:96
+msgid "Muvaffaqiyatsiz"
+msgstr "Muvaffaqiyatsiz"
+
+#: .\payments\models.py:97
+msgid "Muddati o'tdi"
+msgstr "Muddati o'tdi"
+
+#: .\payments\models.py:98
+msgid "Bekor qilindi"
+msgstr "Bekor qilindi"
+
+#: .\payments\models.py:106
+msgid "Referens uchun. Hisobotlarda company_name_snapshot ishlatilsin!"
+msgstr "Referens uchun. Hisobotlarda company_name_snapshot ishlatilsin!"
+
+#: .\payments\models.py:112
+msgid ""
+"To'lov paytida kod biriktirilgan kompaniya nomi. Bo'sh = kompaniyasiz to'lov."
+msgstr ""
+"To'lov paytida kod biriktirilgan kompaniya nomi. Bo'sh = kompaniyasiz to'lov."
+
+#: .\payments\models.py:117
+msgid "Minor birlikda (tiyin)"
+msgstr "Minor birlikda (tiyin)"
+
+#: .\payments\models.py:140
+msgid "To'lov"
+msgstr "To'lov"
+
+#: .\payments\models.py:141
+msgid "To'lovlar"
+msgstr "To'lovlar"

@@ -1,0 +1,136 @@
+# Django Admin Russian Translations
+msgid ""
+msgstr ""
+"Project-Id-Version: Django\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Admin Site
+msgid "Site administration"
+msgstr "Администрирование сайта"
+
+msgid "Administration"
+msgstr "Администрирование"
+
+msgid "Welcome, %(username)s"
+msgstr "Добро пожаловать, %(username)s"
+
+# Auth
+msgid "Username"
+msgstr "Имя пользователя"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Log in"
+msgstr "Войти"
+
+msgid "Log out"
+msgstr "Выйти"
+
+# Actions
+msgid "Action"
+msgstr "Действие"
+
+msgid "Actions"
+msgstr "Действия"
+
+msgid "Go"
+msgstr "Перейти"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Save and add another"
+msgstr "Сохранить и добавить другой"
+
+msgid "Save and continue editing"
+msgstr "Сохранить и продолжить редактирование"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+# Search
+msgid "Search"
+msgstr "Поиск"
+
+msgid "Filter"
+msgstr "Фильтр"
+
+# Date/Time
+msgid "Date"
+msgstr "Дата"
+
+msgid "Time"
+msgstr "Время"
+
+msgid "Today"
+msgstr "Сегодня"
+
+# General
+msgid "Yes"
+msgstr "Да"
+
+msgid "No"
+msgstr "Нет"
+
+msgid "All"
+msgstr "Все"
+
+msgid "None"
+msgstr "Нет"
+
+msgid "View on site"
+msgstr "Посмотреть на сайте"
+
+# ModelAdmin
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Change"
+msgstr "Изменить"
+
+msgid "Change history"
+msgstr "История изменений"
+
+msgid "History"
+msgstr "История"
+
+# Pagination
+msgid "Show all"
+msgstr "Показать все"
+
+# Messages
+msgid "The %(name)s \"%(obj)s\" was added successfully."
+msgstr "%(name)s \"%(obj)s\" успешно добавлен."
+
+msgid "The %(name)s \"%(obj)s\" was changed successfully."
+msgstr "%(name)s \"%(obj)s\" успешно изменен."
+
+msgid "The %(name)s \"%(obj)s\" was deleted successfully."
+msgstr "%(name)s \"%(obj)s\" успешно удален."
+
+# Errors
+msgid "Please correct the errors below."
+msgstr "Пожалуйста, исправьте ошибки ниже."
+
+# Dashboard
+msgid "Dashboard"
+msgstr "Панель управления"
+
+# Recent Actions
+msgid "Recent actions"
+msgstr "Последние действия"
+
+msgid "My actions"
+msgstr "Мои действия"
