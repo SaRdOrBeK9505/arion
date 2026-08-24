@@ -50,18 +50,17 @@ class MontraClient:
         {timestamp}
         {method}
         {path}
-        {idempotency_key}  (agar mavjud bo'lsa)
         {body_hash}
+        
+        MUHIM: idempotency_key canonical stringga kiritilmaydi,
+        faqat headerda yuboriladi.
         """
         t = int(time.time())
         body_string = json.dumps(body, separators=(",", ":")) if body else ""
         body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
-        parts = [str(t), method, path]
-        if idempotency_key:
-            parts.append(idempotency_key)
-        parts.append(body_hash)
-        canonical = "\n".join(parts)  # LF, \r YO'Q
+        # Canonical string: timestamp, method, path, body_hash
+        canonical = f"{t}\n{method}\n{path}\n{body_hash}"
 
         signature = hmac.new(
             self.secret_key.encode(), canonical.encode(), hashlib.sha256
