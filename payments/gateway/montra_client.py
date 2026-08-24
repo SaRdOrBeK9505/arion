@@ -54,7 +54,7 @@ class MontraClient:
         {body_hash}
         """
         t = int(time.time())
-        body_string = json.dumps(body, separators=(",", ":")) if body else ""
+        body_string = json.dumps(body) if body else ""
         body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
         parts = [str(t), method, path]
