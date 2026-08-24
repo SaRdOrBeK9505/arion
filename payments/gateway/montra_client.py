@@ -55,12 +55,11 @@ class MontraClient:
         MUHIM: idempotency_key canonical stringga kiritilmaydi,
         faqat headerda yuboriladi.
         """
-        t = int(time.time() * 1000)  # Millisekundlarda
+        t = int(time.time())  # Sekundlarda
         body_string = json.dumps(body, separators=(",", ":")) if body else ""
-        body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
-        # Canonical string: timestamp, method, path, body_hash
-        canonical = f"{t}\n{method}\n{path}\n{body_hash}"
+        # Canonical string: timestamp, method, path, body (hash emas)
+        canonical = f"{t}\n{method}\n{path}\n{body_string}"
 
         signature = hmac.new(
             self.secret_key.encode(), canonical.encode(), hashlib.sha256
@@ -75,7 +74,6 @@ class MontraClient:
         logger.warning(f"  Path: {path}")
         logger.warning(f"  Idempotency-Key: {idempotency_key}")
         logger.warning(f"  Body: {body_string}")
-        logger.warning(f"  Body Hash: {body_hash}")
         logger.warning(f"  Canonical: {repr(canonical)}")
         logger.warning(f"  Secret Key (FULL): {self.secret_key}")
         logger.warning(f"  Signature: {signature}")
