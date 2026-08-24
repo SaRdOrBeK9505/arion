@@ -57,7 +57,9 @@ class MontraClient:
         body_string = json.dumps(body) if body else ""
         body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
-        parts = [str(t), method, path]
+        # Canonical string uchun full path (BASE_URL'dagi /api/v1 ni qo'shamiz)
+        canonical_path = "/api/v1" + path if not path.startswith("/api/v1") else path
+        parts = [str(t), method, canonical_path]
         if idempotency_key:
             parts.append(idempotency_key)
         parts.append(body_hash)
