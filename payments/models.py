@@ -117,6 +117,14 @@ class Payment(models.Model):
     amount = models.PositiveBigIntegerField(help_text=_("Minor birlikda (tiyin)"))
     currency = models.CharField(max_length=3, default="UZS")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    is_test = models.BooleanField(
+        default=False,
+        help_text=_(
+            "To'lov yaratilgan paytdagi MONTRA_MODE=TEST bo'lsa True. "
+            "Snapshot maydon — keyinchalik o'zgartirilmaydi (Telegram "
+            "xabarnomasida 'test' belgisi shu asosda ko'rsatiladi)."
+        ),
+    )
 
     # --- Gateway integratsiyasi ---
     gateway_invoice_id = models.CharField(max_length=128, blank=True, null=True, db_index=True)
@@ -144,7 +152,7 @@ class Payment(models.Model):
         return f"{self.customer_code_snapshot} - {self.amount // 100:,} {self.currency}".replace(",", " ")
 
     # Snapshot maydonlar — yaratilgandan keyin o'zgartirib bo'lmaydi (moliyaviy audit uchun)
-    _SNAPSHOT_FIELDS = ("company_name_snapshot", "customer_code_snapshot")
+    _SNAPSHOT_FIELDS = ("company_name_snapshot", "customer_code_snapshot", "is_test")
 
     def save(self, *args, **kwargs):
         # BUG TUZATILDI: avvalgi versiyada bu metod hech narsani tekshirmasdi,

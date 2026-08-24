@@ -8,7 +8,7 @@ from .models import Payment
 def send_telegram_notification(self, payment_id: int):
     """
     To'lov muvaffaqiyatli bo'lganda ownerga Telegram xabari yuborish
-    
+
     Args:
         payment_id: To'lov ID
     """
@@ -25,12 +25,21 @@ def send_telegram_notification(self, payment_id: int):
         # Xabar matni
         company_name = payment.company_name_snapshot or "Kompaniyasiz"
         amount_formatted = f"{payment.amount // 100:,} {payment.currency}".replace(",", " ")
-        
+
+        # TEST/LIVE belgisi: agar to'lov TEST kartasi (MONTRA test rejimi)
+        # orqali qilingan bo'lsa, sarlavha va alohida qator qo'shiladi.
+        # LIVE (haqiqiy) to'lovda bu qator umuman bo'lmaydi — o'rni bo'sh
+        # qoladi (talab qilingandek), qo'shimcha belgi chiqarilmaydi.
+        title = "🧪 *TEST to'lov*" if payment.is_test else "✅ *Yangi to'lov*"
+        test_line = "🧪 *Rejim:* TEST karta\n" if payment.is_test else ""
+
         message = (
-            f"✅ *Yangi to'lov*\n\n"
+            f"{title}\n\n"
+            f"{test_line}"
             f"🏢 *Kompaniya:* {company_name}\n"
             f"🔑 *Kod:* {payment.customer_code_snapshot}\n"
             f"💰 *Summa:* {amount_formatted}\n"
+            f"🌐 *IP:* {payment.ip_address}\n"
             f"📅 *Vaqt:* {payment.paid_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"🆔 *To\'lov ID:* {payment.id}"
         )

@@ -19,14 +19,14 @@ from .exceptions import (
 def verify_code(code: str, ip_address: str) -> AccessSession:
     """
     Kodni tekshirish va AccessSession yaratish
-    
+
     Args:
         code: 6 xonali kod
         ip_address: Mijoz IP adresi
-        
+
     Returns:
         AccessSession: Yaratilgan sessiya
-        
+
     Raises:
         CodeNotFoundError: Kod topilmadi yoki faol emas
     """
@@ -70,11 +70,11 @@ def verify_code(code: str, ip_address: str) -> AccessSession:
 
 
 def create_payment(
-    session_id: uuid.UUID,
-    amount: int,
-    ip_address: str,
-    success_url: str = "https://arion-export.uz/payment/success",
-    fail_url: str = "https://arion-export.uz/payment/fail"
+        session_id: uuid.UUID,
+        amount: int,
+        ip_address: str,
+        success_url: str = "https://arion-export.uz/payment/success",
+        fail_url: str = "https://arion-export.uz/payment/fail"
 ) -> dict:
     """
     To'lov yaratish va MONTRA invoice yaratish
@@ -120,6 +120,10 @@ def create_payment(
     description = company_name_snapshot if company_name_snapshot else "Kompaniyasiz to'lov"
 
     # 5. Payment yaratish (snapshot bilan, tiyinda saqlaymiz)
+    # is_test — bu to'lov qaysi MONTRA rejimida (TEST/LIVE) yaratilganini
+    # qotiradi. settings.MONTRA_MODE serverdagi umumiy joriy rejim bo'lgani
+    # uchun (test kalitmi yoki live kalitmi ishlatilyapti), bu yerda aniq
+    # ishlatilgan kalit turi to'g'ridan-to'g'ri ko'rsatiladi.
     idempotency_key = str(uuid.uuid4())
     payment = Payment.objects.create(
         session=session,
@@ -130,6 +134,7 @@ def create_payment(
         amount=amount_in_tiyin,  # Tiyinda saqlash
         ip_address=ip_address,
         idempotency_key=idempotency_key,
+        is_test=(getattr(settings, "MONTRA_MODE", "TEST") != "LIVE"),
     )
 
     # 6. MONTRA orqali invoice yaratish (tiyinda yuboramiz)
