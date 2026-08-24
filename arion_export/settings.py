@@ -385,3 +385,42 @@ if not DEBUG:
     # X-Forwarded-Proto $scheme; qatorini sozlashni unutmang).
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'] if not DEBUG else ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'payments.gateway.montra_client': {
+            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+# Logs papkasini yaratish
+import os
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
