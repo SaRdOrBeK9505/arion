@@ -78,17 +78,17 @@ def create_payment(
 ) -> dict:
     """
     To'lov yaratish va MONTRA invoice yaratish
-    
+
     Args:
         session_id: AccessSession ID
-        amount: Summa (tiyinda)
+        amount: Summa (SO'MDA - mijoz kiritgan qiymat)
         ip_address: Mijoz IP adresi
         success_url: Muvaffaqiyatli to'lov URL
         fail_url: Muvaffaqiyatsiz to'lov URL
-        
+
     Returns:
         dict: {'payment_url': str, 'payment_id': int}
-        
+
     Raises:
         SessionExpiredError: Sessiya muddati o'tgan
         InvalidAmountError: Summa noto'g'ri
@@ -102,18 +102,24 @@ def create_payment(
     if not session.is_valid():
         raise SessionExpiredError("Sessiya muddati o'tgan")
 
-    # 2. Summani tekshirish
-    if amount < Payment.MIN_AMOUNT or amount > Payment.MAX_AMOUNT:
+    # 2. Summani tekshirish (so'mda)
+    MIN_AMOUNT_SOM = 1000
+    MAX_AMOUNT_SOM = 500_000_000
+
+    if amount < MIN_AMOUNT_SOM or amount > MAX_AMOUNT_SOM:
         raise InvalidAmountError(
-            f"Summa {Payment.MIN_AMOUNT // 100:,} dan {Payment.MAX_AMOUNT // 100:,} gacha bo'lishi kerak"
+            f"Summa {MIN_AMOUNT_SOM:,} dan {MAX_AMOUNT_SOM:,} gacha bo'lishi kerak (so'mda)"
         )
 
-    # 3. company_name_snapshot ni aniqlash
+    # 3. MONTRA ga yuborish uchun tiyinga o'tkazish
+    amount_in_tiyin = amount * 100
+
+    # 4. company_name_snapshot ni aniqlash
     company = session.customer_code.company
     company_name_snapshot = company.name if company else ""
     description = company_name_snapshot if company_name_snapshot else "Kompaniyasiz to'lov"
 
-    # 4. Payment yaratish (snapshot bilan)
+    # 5. Payment yaratish (snapshot bilan, tiyinda saqlaymiz)
     idempotency_key = str(uuid.uuid4())
     payment = Payment.objects.create(
         session=session,
@@ -121,17 +127,17 @@ def create_payment(
         company=company,  # joriy holat, referens
         company_name_snapshot=company_name_snapshot,  # QOTIRILGAN qiymat
         customer_code_snapshot=session.customer_code.code,
-        amount=amount,
+        amount=amount_in_tiyin,  # Tiyinda saqlash
         ip_address=ip_address,
         idempotency_key=idempotency_key,
     )
 
-    # 5. MONTRA orqali invoice yaratish
+    # 6. MONTRA orqali invoice yaratish (tiyinda yuboramiz)
     try:
         montra_client = MontraClient()
         invoice_response = montra_client.create_invoice(
             external_id=str(payment.id),
-            amount=amount,
+            amount=amount_in_tiyin,  # Tiyinda yuborish
             currency="UZS",
             description=description,
             success_url=success_url,
