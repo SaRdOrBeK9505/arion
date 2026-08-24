@@ -69,20 +69,6 @@ class MontraClient:
             self.secret_key.encode(), canonical.encode(), hashlib.sha256
         ).hexdigest()
 
-        # DEBUG
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"MONTRA SIGNATURE DEBUG:")
-        logger.warning(f"  Timestamp: {t}")
-        logger.warning(f"  Method: {method}")
-        logger.warning(f"  Path: {path}")
-        logger.warning(f"  Idempotency-Key: {idempotency_key}")
-        logger.warning(f"  Body: {body_string}")
-        logger.warning(f"  Body Hash: {body_hash}")
-        logger.warning(f"  Canonical: {repr(canonical)}")
-        logger.warning(f"  Secret Key (first 8): {self.secret_key[:8]}...")
-        logger.warning(f"  Signature: {signature}")
-
         headers = {
             "Content-Type": "application/json",
             "X-API-Key": self.api_key,

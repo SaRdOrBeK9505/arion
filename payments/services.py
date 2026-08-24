@@ -140,12 +140,13 @@ def create_payment(
         )
 
         # Gateway ma'lumotlarini saqlash
-        payment.gateway_invoice_id = invoice_response.get('invoiceId') or invoice_response.get('id')
+        data = invoice_response.get('data', {})
+        payment.gateway_invoice_id = data.get('id') or invoice_response.get('invoiceId') or invoice_response.get('id')
         payment.gateway_raw_response = invoice_response
         payment.save(update_fields=['gateway_invoice_id', 'gateway_raw_response'])
 
         return {
-            'payment_url': invoice_response.get('paymentUrl') or invoice_response.get('url'),
+            'payment_url': data.get('paymentUrl') or data.get('url') or invoice_response.get('paymentUrl'),
             'payment_id': payment.id,
         }
 
