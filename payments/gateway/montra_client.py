@@ -55,7 +55,7 @@ class MontraClient:
         MUHIM: idempotency_key canonical stringga kiritilmaydi,
         faqat headerda yuboriladi.
         """
-        t = int(time.time())
+        t = int(time.time() * 1000)  # Millisekundlarda
         body_string = json.dumps(body, separators=(",", ":")) if body else ""
         body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
