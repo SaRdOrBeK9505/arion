@@ -1,0 +1,74 @@
+diff --git a/.env.example b/.env.example
+index f613013..d007159 100644
+--- a/.env.example
++++ b/.env.example
+@@ -6,6 +6,9 @@ ALLOWED_HOSTS=localhost,127.0.0.1
+ # CORS — frontend domeni(lari), vergul bilan ajratilgan
+ CORS_ALLOWED_ORIGINS=https://arion-export.uz
+ 
++# Admin panel/API domeni (HTTPS forma yuborish uchun majburiy)
++CSRF_TRUSTED_ORIGINS=https://api.arion-export.uz
++
+ # Nginx orqasida bo'lsa, uning REMOTE_ADDR IP'i (odatda 127.0.0.1)
+ TRUSTED_PROXY_IPS=127.0.0.1
+ 
+diff --git a/arion_export/settings.py b/arion_export/settings.py
+index 969c3f4..de9c42b 100644
+--- a/arion_export/settings.py
++++ b/arion_export/settings.py
+@@ -28,7 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
+ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-1r@jmv)_^_e6ax0k%be(i-vk-7o_0seu0!8)(aj91y&x+x^pu@')
+ 
+ # SECURITY WARNING: don't run with debug turned on in production!
+-DEBUG = os.getenv('DEBUG', 'True') == 'True'
++# Default 'False' — xavfsizroq: agar .env'da DEBUG yozilishi unutilib
++# qolsa, saytimiz DEBUG=True bilan ochilib qolmasin (bu holatda barcha
++# sozlamalar, maxfiy kalitlar xato sahifasida ko'rinib qolishi mumkin).
++DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ 
+ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ 
+@@ -70,6 +73,12 @@ CORS_ALLOWED_ORIGINS = os.getenv(
+     'CORS_ALLOWED_ORIGINS', 'https://arion-export.uz'
+ ).split(',')
+ 
++# Django 4+da HTTPS orqali forma yuborilganda (masalan admin panelga
++# kirish) domen shu ro'yxatda bo'lishi shart, aks holda 403 chiqadi.
++CSRF_TRUSTED_ORIGINS = os.getenv(
++    'CSRF_TRUSTED_ORIGINS', 'https://api.arion-export.uz'
++).split(',')
++
+ ROOT_URLCONF = 'arion_export.urls'
+ 
+ TEMPLATES = [
+@@ -149,6 +158,9 @@ USE_TZ = True
+ # https://docs.djangoproject.com/en/5.2/howto/static-files/
+ 
+ STATIC_URL = 'static/'
++# STATIC_ROOT — collectstatic shu papkaga yig'adi, Nginx shu yerdan
++# xizmat qiladi. Bu sozlamasiz `python manage.py collectstatic` xato beradi.
++STATIC_ROOT = BASE_DIR / 'staticfiles'
+ 
+ # Default primary key field type
+ # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+@@ -356,3 +368,20 @@ LOCALE_PATHS = [
+ USE_I18N = True
+ USE_L10N = True
+ 
++
++# Production xavfsizlik sozlamalari — faqat DEBUG=False bo'lganda yoqiladi.
++# Lokal ishlashda (DEBUG=True, http://localhost) bular yoqilsa server
++# umuman ishlamay qoladi (masalan SSL redirect http://localhost'ni ham
++# https'ga urinib, cookie yo'qoladi) — shuning uchun shartli.
++if not DEBUG:
++    SECURE_SSL_REDIRECT = True
++    SESSION_COOKIE_SECURE = True
++    CSRF_COOKIE_SECURE = True
++    SECURE_HSTS_SECONDS = 31536000  # 1 yil
++    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
++    SECURE_HSTS_PRELOAD = True
++    # Nginx orqasida bo'lgani uchun Django'ga qaysi so'rov aslida HTTPS
++    # ekanini shu header orqali bildiramiz (Nginx proxy_set_header
++    # X-Forwarded-Proto $scheme; qatorini sozlashni unutmang).
++    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
++

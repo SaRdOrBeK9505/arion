@@ -129,8 +129,8 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
-    MIN_AMOUNT = 10_000_00   # 10,000 so'm (tiyinda)
-    MAX_AMOUNT = 500_000_000_00
+    MIN_AMOUNT = 100_000   # 1,000 so'm (tiyinda)
+    MAX_AMOUNT = 50_000_000_000  # 500,000,000 so'm (tiyinda)
 
     class Meta:
         indexes = [
