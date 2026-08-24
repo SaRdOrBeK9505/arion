@@ -50,33 +50,22 @@ class MontraClient:
         {timestamp}
         {method}
         {path}
+        {idempotency_key}  (agar mavjud bo'lsa)
         {body_hash}
-        
-        MUHIM: idempotency_key canonical stringga kiritilmaydi,
-        faqat headerda yuboriladi.
         """
-        t = int(time.time())  # Sekundlarda
+        t = int(time.time())
         body_string = json.dumps(body, separators=(",", ":")) if body else ""
+        body_hash = hashlib.sha256(body_string.encode()).hexdigest()
 
-        # Canonical string: timestamp, method, path, body (hash emas)
-        canonical = f"{t}\n{method}\n{path}\n{body_string}"
+        parts = [str(t), method, path]
+        if idempotency_key:
+            parts.append(idempotency_key)
+        parts.append(body_hash)
+        canonical = "\n".join(parts)  # LF, \r YO'Q
 
         signature = hmac.new(
             self.secret_key.encode(), canonical.encode(), hashlib.sha256
         ).hexdigest()
-
-        # DEBUG - imzo generatsiyasini log qilish
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"MONTRA SIGNATURE DEBUG:")
-        logger.warning(f"  Timestamp: {t}")
-        logger.warning(f"  Method: {method}")
-        logger.warning(f"  Path: {path}")
-        logger.warning(f"  Idempotency-Key: {idempotency_key}")
-        logger.warning(f"  Body: {body_string}")
-        logger.warning(f"  Canonical: {repr(canonical)}")
-        logger.warning(f"  Secret Key (FULL): {self.secret_key}")
-        logger.warning(f"  Signature: {signature}")
 
         headers = {
             "Content-Type": "application/json",

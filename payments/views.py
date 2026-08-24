@@ -70,7 +70,7 @@ def create_payment_view(request):
     POST /api/create-payment/
     {
         "session_id": "uuid",
-        "amount": 100000  # so'mda
+        "amount": 1000000
     }
 
     MUHIM: bu endpointda rate-limit bo'lishi SHART. Aks holda bitta
