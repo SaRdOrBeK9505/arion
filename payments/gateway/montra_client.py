@@ -77,7 +77,7 @@ class MontraClient:
         logger.warning(f"  Body: {body_string}")
         logger.warning(f"  Body Hash: {body_hash}")
         logger.warning(f"  Canonical: {repr(canonical)}")
-        logger.warning(f"  Secret Key (first 8 chars): {self.secret_key[:8]}...")
+        logger.warning(f"  Secret Key (FULL): {self.secret_key}")
         logger.warning(f"  Signature: {signature}")
 
         headers = {
