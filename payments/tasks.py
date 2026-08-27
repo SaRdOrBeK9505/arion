@@ -23,7 +23,6 @@ def send_telegram_notification(self, payment_id: int):
             return
 
         # Xabar matni
-        company_name = payment.company_name_snapshot or "Kompaniyasiz"
         amount_formatted = f"{payment.amount // 100:,} {payment.currency}".replace(",", " ")
 
         # TEST/LIVE belgisi: agar to'lov TEST kartasi (MONTRA test rejimi)
@@ -36,8 +35,6 @@ def send_telegram_notification(self, payment_id: int):
         message = (
             f"{title}\n\n"
             f"{test_line}"
-            f"🏢 *Kompaniya:* {company_name}\n"
-            f"🔑 *Kod:* {payment.customer_code_snapshot}\n"
             f"💰 *Summa:* {amount_formatted}\n"
             f"🌐 *IP:* {payment.ip_address}\n"
             f"📅 *Vaqt:* {payment.paid_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
