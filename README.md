@@ -1,6 +1,6 @@
-# ARION Export — Kod-asosli To'lov Tizimi
+# ARION Export — To'lov Tizimi
 
-Django/DRF backend loyihasi - kod-asosli to'lov tizimi uchun backend.
+Django/DRF backend loyihasi - to'lov tizimi uchun backend.
 
 ## Admin Panel
 
@@ -11,8 +11,8 @@ Admin panel **Jazzmin** theme bilan sozlangan va uch tilda qo'llab-quvvatlanadi:
 
 Admin panel oddiy insonlar ham bemalol boshqara oladigan qilib sozlangan:
 - Zamonaviy va chiroyli dizayn
-- Oson navigatsiya (Kompaniyalar, Kodlar, To'lovlar, Sessiyalar, Loglar)
-- Tezkor linklar (To'lov hisoboti, Yangi kod yaratish)
+- Oson navigatsiya (To'lovlar)
+- Tezkor linklar (To'lov hisoboti)
 - CSV/Excel export qobiliyati
 - Tilda o'tish imkoniyati
 
@@ -22,18 +22,10 @@ Admin panel oddiy insonlar ham bemalol boshqara oladigan qilib sozlangan:
 
 ### Ishlash tartibi
 
-1. Kompaniya (sotuvchi tashkilot) o'z mijoziga 6 xonali unikal kod beradi (offline, telefon/messenjer orqali).
-2. Mijoz saytda to'lov sahifasiga o'tishdan oldin shu kodni kiritadi.
-3. Backend kodni bazadan tekshiradi. Agar kod **kompaniyaga biriktirilgan** bo'lsa — to'lovga o'sha kompaniya nomi yoziladi. Agar kod **hech qanday kompaniyaga biriktirilmagan** bo'lsa — to'lov kompaniya nomisiz o'tadi.
-4. Mijoz o'zi xohlagan miqdorda summani kiritadi.
-5. To'lov MONTRA Payment Gateway orqali amalga oshiriladi.
-6. Owner (admin) Django admin panel orqali kodlarni yaratadi, kompaniyalarga biriktiradi, to'lovlar tarixini ko'radi.
-
-## Muhim arxitektura qoidasi — SNAPSHOT PRINSIPI
-
-Kod ↔ kompaniya bog'lanishi **vaqt o'tishi bilan o'zgaruvchan**. Shu sababli:
-
-> **`Payment` (to'lov) modeli hech qachon kompaniya nomini "jonli" ForeignKey orqali ko'rsatmasligi kerak.** To'lov amalga oshirilgan paytda, kod qaysi kompaniyaga biriktirilgan bo'lsa — o'sha kompaniyaning **nomi matn sifatida** (`company_name_snapshot`) va ID'si (`company` FK, `null=True`, faqat referens uchun) to'lov yozuviga **o'sha lahzada** yozib qo'yiladi.
+1. Mijoz saytda to'lov sahifasiga o'tadi.
+2. Mijoz o'zi xohlagan miqdorda summani kiritadi.
+3. To'lov MONTRA Payment Gateway orqali amalga oshiriladi.
+4. Owner (admin) Django admin panel orqali to'lovlar tarixini ko'radi.
 
 ## Texnologiyalik stek
 
@@ -129,8 +121,7 @@ API docs: http://localhost:8000/api/docs/
 
 | Endpoint | Method | Vazifa |
 |---|---|---|
-| `/api/verify-code/` | POST | Kodni tekshirish, `AccessSession` yaratish |
-| `/api/create-payment/` | POST | `session_token` + `amount` → gateway invoice + `paymentUrl` |
+| `/api/create-payment/` | POST | `amount` → gateway invoice + `paymentUrl` |
 | `/api/payments/<id>/status/` | GET | Frontend polling uchun |
 | `/api/webhooks/montra/` | POST | MONTRA'dan kelgan webhook |
 
@@ -141,9 +132,7 @@ python manage.py test payments.tests
 ```
 
 Testlar quyidagilarni qamrab oladi:
-- `verify_code`: mavjud kod, mavjud bo'lmagan kod, faol bo'lmagan kod
-- `create_payment`: kompaniyali kod snapshot, kompaniyasiz kod, MIN/MAX chegaralar
-- **Snapshot immutability testi**: loyihaning eng muhim testi
+- `create_payment`: kompaniyasiz to'lov, MIN/MAX chegaralar
 - Webhook idempotency: bir xil webhook ikki marta yuborilganda
 
 ## Celery (ixtiyoriy)

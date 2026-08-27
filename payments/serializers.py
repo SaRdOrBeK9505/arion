@@ -3,24 +3,7 @@ from drf_spectacular.utils import extend_schema_field
 from .models import Payment
 
 
-class VerifyCodeRequestSerializer(serializers.Serializer):
-    code = serializers.CharField(
-        max_length=6,
-        help_text="6 xonali kod"
-    )
-
-
-class VerifyCodeResponseSerializer(serializers.Serializer):
-    session_id = serializers.UUIDField(help_text="Sessiya ID")
-    expires_at = serializers.DateTimeField(help_text="Sessiya muddati")
-    company_name = serializers.CharField(
-        allow_blank=True,
-        help_text="Kompaniya nomi (agar biriktirilgan bo'lsa)"
-    )
-
-
 class CreatePaymentRequestSerializer(serializers.Serializer):
-    session_id = serializers.UUIDField(help_text="Sessiya ID")
     amount = serializers.IntegerField(
         min_value=1000,  # Minimal 1,000 so'm
         max_value=500_000_000,  # Maksimal 500,000,000 so'm

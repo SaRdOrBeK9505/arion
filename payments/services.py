@@ -1,108 +1,43 @@
 import json
 import uuid
-from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count
 from django.conf import settings
-from sentry_sdk import capture_message
-from .models import Company, CustomerCode, AccessSession, Payment, CodeVerificationLog, WebhookEvent
+from .models import Payment, WebhookEvent
 from .gateway.montra_client import MontraClient, MontraClientError
 from .exceptions import (
-    CodeNotFoundError,
-    SessionExpiredError,
     InvalidAmountError,
     WebhookSignatureError,
     PaymentNotFoundError,
 )
 
 
-def verify_code(code: str, ip_address: str) -> AccessSession:
-    """
-    Kodni tekshirish va AccessSession yaratish
-
-    Args:
-        code: 6 xonali kod
-        ip_address: Mijoz IP adresi
-
-    Returns:
-        AccessSession: Yaratilgan sessiya
-
-    Raises:
-        CodeNotFoundError: Kod topilmadi yoki faol emas
-    """
-    try:
-        customer_code = CustomerCode.objects.get(code=code, is_active=True)
-        was_successful = True
-    except CustomerCode.DoesNotExist:
-        was_successful = False
-        # Log yozish
-        CodeVerificationLog.objects.create(
-            code_attempted=code,
-            ip_address=ip_address,
-            was_successful=False,
-            matched_code=None
-        )
-        raise CodeNotFoundError("Kod topilmadi yoki faol emas")
-
-    # Muvaffaqiyatli urinish logi
-    CodeVerificationLog.objects.create(
-        code_attempted=code,
-        ip_address=ip_address,
-        was_successful=True,
-        matched_code=customer_code
-    )
-
-    # Global brute-force tekshiruvi (5 daqiqada 50+ muvaffaqiyatsiz urinish)
-    five_minutes_ago = timezone.now() - timedelta(minutes=5)
-    failed_attempts = CodeVerificationLog.objects.filter(
-        created_at__gte=five_minutes_ago,
-        was_successful=False
-    ).count()
-
-    if failed_attempts >= 50:
-        capture_message(
-            f"Potentsial brute-force hujumi: 5 daqiqada {failed_attempts} muvaffaqiyatsiz urinish",
-            level="warning"
-        )
-
-    # Sessiya yaratish
-    return AccessSession.create_for(customer_code, ip_address)
-
-
 def create_payment(
-        session_id: uuid.UUID,
         amount: int,
         ip_address: str,
-        success_url: str = "https://arion-export.uz/payment/success",
-        fail_url: str = "https://arion-export.uz/payment/fail"
+        success_url: str = "https://arion-export.uz/?payment=success",
+        fail_url: str = "https://arion-export.uz/?payment=fail"
 ) -> dict:
     """
     To'lov yaratish va MONTRA invoice yaratish
 
     Args:
-        session_id: AccessSession ID
         amount: Summa (SO'MDA - mijoz kiritgan qiymat)
         ip_address: Mijoz IP adresi
-        success_url: Muvaffaqiyatli to'lov URL
-        fail_url: Muvaffaqiyatsiz to'lov URL
+        success_url: Muvaffaqiyatli to'lovdan keyin qaytariladigan URL.
+            MUHIM: frontendda alohida /payment/success sahifasi YO'Q,
+            shuning uchun bosh sahifaga (?payment=success query bilan)
+            qaytariladi — aks holda mijoz 3DS'dan keyin 404 sahifasiga
+            tushib qoladi.
+        fail_url: Muvaffaqiyatsiz to'lovdan keyin qaytariladigan URL.
+            Xuddi shu sababdan bosh sahifaga (?payment=fail) qaytariladi.
 
     Returns:
         dict: {'payment_url': str, 'payment_id': int}
 
     Raises:
-        SessionExpiredError: Sessiya muddati o'tgan
         InvalidAmountError: Summa noto'g'ri
     """
-    # 1. Sessiyani olish va tekshirish
-    try:
-        session = AccessSession.objects.get(id=session_id)
-    except AccessSession.DoesNotExist:
-        raise SessionExpiredError("Sessiya topilmadi")
-
-    if not session.is_valid():
-        raise SessionExpiredError("Sessiya muddati o'tgan")
-
-    # 2. Summani tekshirish (so'mda)
+    # 1. Summani tekshirish (so'mda)
     MIN_AMOUNT_SOM = 1000
     MAX_AMOUNT_SOM = 500_000_000
 
@@ -111,33 +46,29 @@ def create_payment(
             f"Summa {MIN_AMOUNT_SOM:,} dan {MAX_AMOUNT_SOM:,} gacha bo'lishi kerak (so'mda)"
         )
 
-    # 3. MONTRA ga yuborish uchun tiyinga o'tkazish
+    # 2. MONTRA ga yuborish uchun tiyinga o'tkazish
     amount_in_tiyin = amount * 100
 
-    # 4. company_name_snapshot ni aniqlash
-    company = session.customer_code.company
-    company_name_snapshot = company.name if company else ""
-    description = company_name_snapshot if company_name_snapshot else "Kompaniyasiz to'lov"
+    # 3. Kompaniyasiz to'lov
+    company_name_snapshot = ""
+    description = "Kompaniyasiz to'lov"
 
-    # 5. Payment yaratish (snapshot bilan, tiyinda saqlaymiz)
+    # 4. Payment yaratish (kompaniyasiz, tiyinda saqlaymiz)
     # is_test — bu to'lov qaysi MONTRA rejimida (TEST/LIVE) yaratilganini
     # qotiradi. settings.MONTRA_MODE serverdagi umumiy joriy rejim bo'lgani
     # uchun (test kalitmi yoki live kalitmi ishlatilyapti), bu yerda aniq
     # ishlatilgan kalit turi to'g'ridan-to'g'ri ko'rsatiladi.
     idempotency_key = str(uuid.uuid4())
     payment = Payment.objects.create(
-        session=session,
-        customer_code=session.customer_code,
-        company=company,  # joriy holat, referens
-        company_name_snapshot=company_name_snapshot,  # QOTIRILGAN qiymat
-        customer_code_snapshot=session.customer_code.code,
+        company_name_snapshot=company_name_snapshot,
+        customer_code_snapshot="",
         amount=amount_in_tiyin,  # Tiyinda saqlash
         ip_address=ip_address,
         idempotency_key=idempotency_key,
         is_test=(getattr(settings, "MONTRA_MODE", "TEST") != "LIVE"),
     )
 
-    # 6. MONTRA orqali invoice yaratish (tiyinda yuboramiz)
+    # 5. MONTRA orqali invoice yaratish (tiyinda yuboramiz)
     try:
         montra_client = MontraClient()
         invoice_response = montra_client.create_invoice(

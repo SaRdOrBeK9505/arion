@@ -6,53 +6,13 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
 from .serializers import (
-    VerifyCodeRequestSerializer,
-    VerifyCodeResponseSerializer,
     CreatePaymentRequestSerializer,
     CreatePaymentResponseSerializer,
     PaymentStatusSerializer,
     WebhookSerializer,
 )
-from .services import verify_code, create_payment, handle_webhook
+from .services import create_payment, handle_webhook
 from .exceptions import PaymentServiceError
-
-
-@extend_schema(
-    request=VerifyCodeRequestSerializer,
-    responses={200: VerifyCodeResponseSerializer},
-    description="Kodni tekshirish va sessiya yaratish",
-)
-@api_view(['POST'])
-@ratelimit(key='ip', rate='5/m', method='POST')
-@ratelimit(key='ip', rate='20/h', method='POST')
-def verify_code_view(request):
-    """
-    Kodni tekshirish
-    
-    POST /api/verify-code/
-    {
-        "code": "123456"
-    }
-    """
-    serializer = VerifyCodeRequestSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-
-    try:
-        session = verify_code(
-            code=serializer.validated_data['code'],
-            ip_address=get_client_ip(request),
-        )
-
-        response_data = {
-            'session_id': session.id,
-            'expires_at': session.expires_at,
-            'company_name': session.customer_code.company.name if session.customer_code.company else "",
-        }
-
-        return Response(VerifyCodeResponseSerializer(response_data).data)
-
-    except PaymentServiceError as e:
-        raise ValidationError(str(e))
 
 
 @extend_schema(
@@ -69,13 +29,11 @@ def create_payment_view(request):
 
     POST /api/create-payment/
     {
-        "session_id": "uuid",
         "amount": 100000  # so'mda
     }
 
-    MUHIM: bu endpointda rate-limit bo'lishi SHART. Aks holda bitta
-    session_id (masalan brauzer tarixi, log fayl orqali oshkor bo'lib
-    qolsa) bilan cheksiz marta MONTRA'da invoice yaratish mumkin bo'lardi
+    MUHIM: bu endpointda rate-limit bo'lishi SHART. Aks holda
+    cheksiz marta MONTRA'da invoice yaratish mumkin bo'lardi
     (spam-invoice / MONTRA API limitiga tegish xavfi).
     """
     serializer = CreatePaymentRequestSerializer(data=request.data)
@@ -83,7 +41,6 @@ def create_payment_view(request):
 
     try:
         result = create_payment(
-            session_id=serializer.validated_data['session_id'],
             amount=serializer.validated_data['amount'],
             ip_address=get_client_ip(request),
         )

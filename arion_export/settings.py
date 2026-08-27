@@ -273,16 +273,11 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Xush kelibsiz",
     # navigation
     "navigation": [
-        {"app": "payments", "models": ["company"], "label": "Kompaniyalar"},
-        {"app": "payments", "models": ["customercode"], "label": "Kodlar"},
         {"app": "payments", "models": ["payment"], "label": "To'lovlar"},
-        {"app": "payments", "models": ["accesssession"], "label": "Sessiyalar"},
-        {"app": "payments", "models": ["codeverificationlog"], "label": "Loglar"},
     ],
     # links
     "links": [
         {"model": "payment", "label": "To'lovlar", "url": "/admin/payments/payment/"},
-        {"model": "customercode", "label": "Kod qo'shish", "url": "/admin/payments/customercode/add/"},
     ],
     # user menu
     "usermenu": [
@@ -300,11 +295,7 @@ JAZZMIN_SETTINGS = {
     "hide_models": [],
     # icons
     "icons": {
-        "company": "fas fa-building",
-        "customercode": "fas fa-key",
         "payment": "fas fa-credit-card",
-        "accesssession": "fas fa-clock",
-        "codeverificationlog": "fas fa-history",
     },
     # languages
     "language_chooser": True,

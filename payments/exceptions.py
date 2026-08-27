@@ -6,16 +6,6 @@ class PaymentServiceError(Exception):
     pass
 
 
-class CodeNotFoundError(PaymentServiceError):
-    """Kod topilmadi yoki faol emas"""
-    pass
-
-
-class SessionExpiredError(PaymentServiceError):
-    """Sessiya muddati o'tgan"""
-    pass
-
-
 class InvalidAmountError(PaymentServiceError):
     """Summa noto'g'ri"""
     pass
